@@ -254,14 +254,48 @@ def run_all():
     ob = sphere("Opts", sub=3)
     ob.data.uv_layers.new(name="Only")
     select([ob])
-    r = core.run(bpy.context, margin_px=40, tex=512, match_density=True, align_axes=True, replace=True, max_faces=100)
-    check("core ignores paid options: not skipped by max_faces=100, replace=True ignored",
-          r["objects"] == 1 and maps(ob) == ["Only", "UVReady"], "%s %s" % (r["objects"], maps(ob)))
+    refused = []
+    for kw in (dict(margin_px=40), dict(tex=512), dict(match_density=True), dict(align_axes=True), dict(replace=True),
+               dict(max_faces=100)):
+        try:
+            core.run(bpy.context, **kw)
+        except TypeError:
+            refused.append(list(kw)[0])
+    check("core.run takes no paid option; nothing unwrapped by the refused calls", len(refused) == 6 and
+          maps(ob) == ["Only"], "%s %s" % (refused, maps(ob)))
+    src = open(core.__file__, encoding="utf-8").read()
+    check("paid code is not in the Lite core", not any(w in src for w in (
+        "_pack_axis", "align_axes", "match_density", "max_faces", "margin_px", "const.LITE_")) and
+        not hasattr(core, "_pack_axis"))
+    r = core.run(bpy.context)
     ref = sphere("Ref", sub=3, loc=(4, 0, 0))
     select([ref])
-    core.run(bpy.context)
-    check("core with paid options = core with defaults (same UVs)",
+    saved = (const.LITE_MARGIN, const.LITE_TEX, const.LITE_MAX_FACES)
+    const.LITE_MARGIN, const.LITE_TEX, const.LITE_MAX_FACES = 40, 512, 100          # a script changing the constants
+    try:
+        r2 = core.run(bpy.context)
+    finally:
+        const.LITE_MARGIN, const.LITE_TEX, const.LITE_MAX_FACES = saved
+    check("changed module constants change nothing: not skipped, same UVs as the defaults",
+          r["objects"] == 1 and r2["objects"] == 1 and maps(ob) == ["Only", "UVReady"] and
           uv_hash(ob)["UVReady"] == uv_hash(ref)["UVReady"], "%s %s" % (uv_hash(ob)["UVReady"], uv_hash(ref)["UVReady"]))
+    sc = bpy.context.scene
+    sc["uvready_lite_settings"] = {"margin": 40, "max_faces": 2000000, "replace": True}     # scene data set by a script
+    sc["uvready_settings"] = {"margin": 40, "replace": True}
+    extra = sphere("Extra", sub=3, loc=(8, 0, 0))
+    extra.data.uv_layers.new(name="Mine")
+    select([extra])
+    try:
+        bad = bpy.ops.uvready_lite.unwrap(margin=40)
+    except TypeError:
+        bad = "refused"
+    res = unwrap()
+    op_props = [p.identifier for p in bpy.ops.uvready_lite.unwrap.get_rna_type().properties if p.identifier != "rna_type"]
+    check("operator has no properties; scene data set by a script changes nothing", bad == "refused" and
+          res == {"FINISHED"} and maps(extra) == ["Mine", "UVReady"] and
+          uv_hash(extra)["UVReady"] == uv_hash(ref)["UVReady"] and
+          op_props == [] and not getattr(ops.UVREADYLITE_OT_unwrap, "__annotations__", {}),
+          "%s %s %s %s" % (bad, res, maps(extra), op_props))
 
     # ------------------------------------------------------------------------------------------ several selected
     core = reset()
@@ -315,8 +349,12 @@ def run_all():
     big = bpy.context.active_object
     big.name = "Big"
     select([big])
-    r = core.run(bpy.context)
-    check("over 200,000 faces: skipped, message names the full version", r["objects"] == 0 and len(big.data.uv_layers) <= 1
+    const.LITE_MAX_FACES = 2000000
+    try:
+        r = core.run(bpy.context)
+    finally:
+        const.LITE_MAX_FACES = 200000
+    check("over 200,000 faces: skipped (also with the constant raised), message names the full version", r["objects"] == 0 and len(big.data.uv_layers) <= 1
           and any("over the Lite limit of 200000" in x and "full version" in x for x in r["messages"]),
           "%d faces %s" % (len(big.data.polygons), r["messages"]))
 

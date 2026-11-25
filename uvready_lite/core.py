@@ -38,15 +38,12 @@ def _free_name(me, base):
     return "%s.%03d" % (base, i)
 
 
-def run(context, margin_px=4, tex=2048, match_density=True, align_axes=False, replace=False, max_faces=200000,
-        progress=None):
+def run(context, progress=None):
     """Returns dict(done=[per object dict], messages=[str], islands, stretch_pct, label, flips).
-    Objects other than meshes, meshes without faces, meshes over max_faces, library data and duplicates of one mesh
-    datablock are skipped with a message.
-    Lite: the options are fixed to the full version's defaults whatever is passed, and only ONE mesh is unwrapped
-    (the active one when it qualifies, else the first by name); the others are named in a message."""
-    margin_px, tex, match_density, align_axes, replace, max_faces = (
-        const.LITE_MARGIN, const.LITE_TEX, False, False, False, const.LITE_MAX_FACES)
+    Objects other than meshes, meshes without faces, meshes over 200000 faces, library data and duplicates of one
+    mesh datablock are skipped with a message.
+    Lite: no options (the full version's defaults are written in: 4 px margin on 2048), and only ONE mesh is
+    unwrapped (the active one when it qualifies, else the first by name); the others are named in a message."""
     msgs = []
     sel = list(context.selected_objects)
     active = context.view_layer.objects.active
@@ -62,10 +59,10 @@ def run(context, margin_px=4, tex=2048, match_density=True, align_axes=False, re
             msgs.append("Skipped %s: linked from a library." % ob.name)
         elif not len(me.polygons):
             msgs.append("Skipped %s: the mesh has no faces." % ob.name)
-        elif len(me.polygons) > max_faces:
+        elif len(me.polygons) > 200000:
             msgs.append("Skipped %s: %d faces is over the Lite limit of %d (decimate first; the full version "
                         "lets you raise the limit)."
-                        % (ob.name, len(me.polygons), max_faces))
+                        % (ob.name, len(me.polygons), 200000))
         elif me.as_pointer() in seen:
             msgs.append("%s shares its mesh with another selected object: unwrapped once." % ob.name)
         else:
@@ -86,14 +83,12 @@ def run(context, margin_px=4, tex=2048, match_density=True, align_axes=False, re
             _, uniform = world_scale(ob)
             if not uniform:
                 msgs.append("%s has a non-uniform scale: apply it (Ctrl+A) or the texture will look stretched." % ob.name)
-            if replace and me.uv_layers.active:
-                name = me.uv_layers.active.name
-            elif len(me.uv_layers) >= const.MAX_UV_MAPS:
+            if len(me.uv_layers) >= const.MAX_UV_MAPS:
                 name = me.uv_layers.active.name
                 msgs.append("%s has %d UV maps already: the active one was replaced." % (ob.name, const.MAX_UV_MAPS))
             else:
                 name = _free_name(me, const.UV_NAME)
-            st = autouv.auto_uv(ob, tex=tex, gap_px=margin_px, uv_name=name, pack=not align_axes)
+            st = autouv.auto_uv(ob, tex=2048, gap_px=4, uv_name=name, pack=True)
             done.append(dict(ob=ob, uv=name, stats=st))
     finally:
         for o in context.selected_objects:
@@ -102,7 +97,7 @@ def run(context, margin_px=4, tex=2048, match_density=True, align_axes=False, re
             if o.name in context.view_layer.objects:
                 o.select_set(True)
         context.view_layer.objects.active = active
-    # measure (and, for several objects, share one texel density)
+    # measure
     infos = []
     for d in done:
         me = d["ob"].data
@@ -110,13 +105,6 @@ def run(context, margin_px=4, tex=2048, match_density=True, align_axes=False, re
         a3 = float(ex["T"].fa.sum()) * (world_scale(d["ob"])[0] or 1.0)
         dens = math.sqrt(m["fill_sum"] / a3) if a3 > 0 and m["fill_sum"] > 0 else 0.0
         infos.append((m, dens))
-    if match_density and len(done) > 1:
-        dmin = min((x[1] for x in infos if x[1] > 0), default=0.0)
-        if dmin > 0:
-            for d, (m, dens) in zip(done, infos):
-                if dens > dmin * 1.0001:
-                    uv = L._uv_array(d["ob"].data) * (dmin / dens)
-                    d["ob"].data.uv_layers[d["uv"]].data.foreach_set("uv", uv.ravel())
     islands, flips, wsum, awsum = 0, 0, 0.0, 0.0
     for d, (m, _) in zip(done, infos):
         d["islands"] = m["islands"]

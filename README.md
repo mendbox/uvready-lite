@@ -69,7 +69,7 @@ UVReady Lite is a free, open-source Blender add-on that unwraps a mesh with one 
 2. **Edit > Preferences > Get Extensions**, arrow menu at the top right, **Install from Disk**, pick the zip.
 3. Select your mesh in Object Mode, press `N`, open the **UVReady Lite** tab, press **Auto UV**.
 
-Lite and the full UVReady can be installed at the same time: they have their own tabs and settings.
+Lite and the full UVReady can be installed at the same time: each has its own sidebar tab, and Lite does not touch the full version's settings.
 
 ## Platforms
 

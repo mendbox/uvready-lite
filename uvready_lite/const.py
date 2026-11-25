@@ -30,7 +30,7 @@ CLASS_PREFIX = _KEY.upper()
 UV_NAME = "UVReady"                        # name of the UV map created in "new map" mode
 MAX_UV_MAPS = 8                           # Blender's limit
 
-# Lite (set by tools/build_lite.py of the full version; core.run enforces them whatever the caller passes)
+# Lite (set by tools/build_lite.py of the full version). Shown in the panel; core.run has the same numbers written in.
 LITE_MARGIN = 4                          # px
 LITE_TEX = 2048                          # texture size the margin is measured on
 LITE_MAX_FACES = 200000                    # objects over this are skipped
