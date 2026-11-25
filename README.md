@@ -34,7 +34,7 @@ UVReady Lite is a free, open-source Blender add-on that unwraps a mesh with one 
 ### No flipped faces
 
 ![Blender UV unwrap without flipped faces](docs/media/uvready-noflips.webp)
-*Flipped UV faces are repaired: 0 flipped faces on all 12 of our test meshes and on 5 scans.*
+*Flipped UV faces are repaired: 0 flipped faces on all 12 of our test meshes and on real 3D scans.*
 
 ### Flat and hard-surface parts
 
@@ -44,7 +44,7 @@ UVReady Lite is a free, open-source Blender add-on that unwraps a mesh with one 
 ### Scans and sculpts
 
 ![Blender auto UV on a photogrammetry scan](docs/media/uvready-scan.webp)
-*Tested on 5 real scans: 0 flipped faces, no overlap, 13 to 110 times fewer islands than Smart UV.*
+*Tested on real 3D scans: 0 flipped faces, no overlap, 28 to 110 times fewer islands than Smart UV.*
 
 ## Lite vs Full
 
