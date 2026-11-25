@@ -58,7 +58,7 @@ UVReady Lite is a free, open-source Blender add-on that unwraps a mesh with one 
 | Rotate islands to axes (straight packing for hard-surface) | - | yes |
 | Replace the active UV map instead of adding one | - | yes |
 | Face limit per object | 200,000 | adjustable up to 2,000,000 |
-| Windows, macOS (Apple Silicon and Intel), Linux | yes | yes |
+| Windows, macOS, Linux | yes | yes |
 
 ![Blender texel density across several objects (full version)](docs/media/uvready-density.webp)
 *The full version: many objects in one click, with the same texel density.*
